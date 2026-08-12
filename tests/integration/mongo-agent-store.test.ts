@@ -35,64 +35,60 @@ describeWithMongo("Mongo agent store acceptance", () => {
     if (client) await client.close();
   });
 
-  it(
-    "persists an approval pause and resumes the same run from a new store instance",
-    async () => {
-      const firstStore = new MongoAgentStore(database);
-      await firstStore.initialize();
-      await ensureDemoSeed(firstStore);
+  it("persists an approval pause and resumes the same run from a new store instance", async () => {
+    const firstStore = new MongoAgentStore(database);
+    await firstStore.initialize();
+    await ensureDemoSeed(firstStore);
 
-      const firstModel = new MockModelGateway();
-      const firstOrchestrator = new AgentOrchestrator(
-        firstStore,
-        firstModel,
-        createToolRegistry(firstModel),
-      );
+    const firstModel = new MockModelGateway();
+    const firstOrchestrator = new AgentOrchestrator(
+      firstStore,
+      firstModel,
+      createToolRegistry(firstModel),
+    );
 
-      const started = await firstOrchestrator.startRun({
-        workspaceId: DEMO_WORKSPACE_ID,
-        projectId: DEMO_PROJECT_ID,
-        conversationId: DEMO_CONVERSATION_ID,
-        goal: "Increase trial-to-paid conversion with three experiments",
-        idempotencyKey: "mongo_acceptance_request_1234",
-        mode: "mock",
-        demoScenario: "happy_path",
-      });
+    const started = await firstOrchestrator.startRun({
+      workspaceId: DEMO_WORKSPACE_ID,
+      projectId: DEMO_PROJECT_ID,
+      conversationId: DEMO_CONVERSATION_ID,
+      goal: "Increase trial-to-paid conversion with three experiments",
+      idempotencyKey: "mongo_acceptance_request_1234",
+      mode: "mock",
+      demoScenario: "happy_path",
+    });
 
-      expect(started.run.status).toBe("waiting_for_approval");
-      expect(started.run.artifacts.actionPlan).toBeUndefined();
+    expect(started.run.status).toBe("waiting_for_approval");
+    expect(started.run.artifacts.actionPlan).toBeUndefined();
 
-      const secondStore = new MongoAgentStore(database);
-      await secondStore.initialize();
+    const secondStore = new MongoAgentStore(database);
+    await secondStore.initialize();
 
-      const reloaded = await secondStore.getRun(started.run.id);
-      expect(reloaded).toEqual(started.run);
+    const reloaded = await secondStore.getRun(started.run.id);
+    expect(reloaded).toEqual(started.run);
 
-      const secondModel = new MockModelGateway();
-      const secondOrchestrator = new AgentOrchestrator(
-        secondStore,
-        secondModel,
-        createToolRegistry(secondModel),
-      );
+    const secondModel = new MockModelGateway();
+    const secondOrchestrator = new AgentOrchestrator(
+      secondStore,
+      secondModel,
+      createToolRegistry(secondModel),
+    );
 
-      const completed = await secondOrchestrator.resolveApproval({
-        runId: started.run.id,
-        approvalId: started.run.approvals[0].id,
-        decision: "approve",
-        decisionId: "mongo_acceptance_decision_1234",
-      });
+    const completed = await secondOrchestrator.resolveApproval({
+      runId: started.run.id,
+      approvalId: started.run.approvals[0].id,
+      decision: "approve",
+      decisionId: "mongo_acceptance_decision_1234",
+    });
 
-      const events = await secondStore.listRunEvents(started.run.id);
+    const events = await secondStore.listRunEvents(started.run.id);
 
-      expect(completed.run.status).toBe("completed");
-      expect(completed.run.artifacts.actionPlan?.experimentId).toBe(
-        started.run.approvals[0].experimentId,
-      );
+    expect(completed.run.status).toBe("completed");
+    expect(completed.run.artifacts.actionPlan?.experimentId).toBe(
+      started.run.approvals[0].experimentId,
+    );
 
-      expect(events.map((event) => event.sequence)).toEqual(
-        events.map((_, index) => index + 1),
-      );
-    },
-    20_000,
-  );
+    expect(events.map((event) => event.sequence)).toEqual(
+      events.map((_, index) => index + 1),
+    );
+  }, 20_000);
 });
