@@ -1,0 +1,28 @@
+name: Import source
+
+on:
+  push:
+    branches: [import-mvp]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Expand source package
+        shell: bash
+        run: |
+          base64 --decode .import/project.zip.b64 > /tmp/project.zip
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .import -exec rm -rf {} +
+          unzip -q -o /tmp/project.zip -d .
+          rm -rf .import
+      - uses: EndBug/add-and-commit@v9
+        with:
+          message: Import Agentic Growth Copilot MVP
