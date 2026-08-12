@@ -1,0 +1,39 @@
+name: Bootstrap repository
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".bootstrap/READY"
+
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct source archive
+        shell: bash
+        run: |
+          cat .bootstrap/part*.txt | base64 --decode > /tmp/agentic-growth-copilot.zip
+
+      - name: Replace bootstrap tree with project source
+        shell: bash
+        run: |
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .bootstrap -exec rm -rf {} +
+          unzip -q -o /tmp/agentic-growth-copilot.zip -d .
+          rm -rf .bootstrap
+
+      - name: Commit imported project
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Import Agentic Growth Copilot MVP"
+          git push origin HEAD:main
