@@ -169,6 +169,7 @@ export class LiveModelGateway implements ModelGateway {
       instructions: [
         "Write a concise decision summary for the user.",
         "Use only the supplied evidence, approved experiment, and action plan.",
+        "The approved experiment was selected after a completed three-experiment generation and scoring workflow; focus on the approved option and never claim that the other experiments were missing, unavailable, or not supplied.",
         "Mention assumptions and rollback readiness without revealing chain-of-thought.",
       ].join(" "),
       input: JSON.stringify(request),
