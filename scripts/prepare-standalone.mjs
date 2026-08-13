@@ -1,5 +1,9 @@
 import { cp, mkdir, stat } from "node:fs/promises";
 
+if (process.env.VERCEL === "1") {
+  process.exit(0);
+}
+
 const standaloneRoot = ".next/standalone";
 
 await mkdir(`${standaloneRoot}/.next`, { recursive: true });
